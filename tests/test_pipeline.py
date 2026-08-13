@@ -78,6 +78,27 @@ class TestRetrieval:
             "Different questions should retrieve different chunks"
         )
 
+    # Extra test cases:
+    def test_not_enough_information(self, vector_store, llm):
+        """
+        Tests that the llm responds correctly when the context does not answer the question / is not relevant to the prompt.
+        """
+        result = ask_question(vector_store, llm, "Hi")
+        answer_text = result["answer"].lower()
+        assert "i don't have enough information to answer that." in answer_text, (
+            "Answer should be that there is not enough information."
+        )
+
+    def test_empty_prompt(self, vector_store, llm):
+        """
+        Tests that the llm responds correctly when there is no question. 
+        """
+        result = ask_question(vector_store, llm, "")
+        answer_text = result["answer"].lower()
+        assert "i don't have enough information to answer that." in answer_text, (
+            "Answer should be that there is not enough information."
+        )
+
 
 # ────────────────────────────────
 # Answer generation

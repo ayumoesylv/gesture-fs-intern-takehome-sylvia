@@ -13,8 +13,12 @@ Useful docs:
 """
 
 import os
+import argparse
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-from src.knowledge_base import build_knowledge_base
+from langchain_community.vectorstores import FAISS
+from collections.abc import Callable
+# from src.knowledge_base import build_knowledge_base
+from knowledge_base import build_knowledge_base
 
 # ──────────────────────────────────────────────
 # Provided: local LLM (no API key needed)
@@ -57,7 +61,7 @@ Answer:"""
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # TODO 1: Implement ask_question
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-def ask_question(vector_store, llm, question: str) -> dict:
+def ask_question(vector_store: FAISS, llm: Callable, question: str) -> dict:
     """Retrieve relevant chunks and generate an answer.
 
     Steps:
@@ -116,23 +120,46 @@ def main():
          - Calls ask_question() with their input
          - Prints the retrieved sources and the answer
     """
-    data_dir = os.path.join(os.path.dirname(__file__), "..", "data")
+    def display_output(vector_store: FAISS, llm: Callable, question: str):
+        """
+        Returns nothing. Prints the sources and answer for a given question.
 
-    knowledge_base = build_knowledge_base(data_dir)
-    model = get_llm() 
+        Preconditions: 
+            vector_store: FAISS vector store from knowledge_base.py
+            llm: Callable from get_llm()
+            question: The user's question string
+        """
+        response = ask_question(vector_store, llm, question)
+        sources = response["sources"]
+        answer = response["answer"]
+        for source in range(len(sources)): print(f"""Source #{source + 1}: {sources[source]}\n""")
+        print("Answer: ", answer)
 
-    sesh_active = True 
-    while sesh_active: # handle the user input -> response loop
-        user_input = input("> Please type your question. Type 'quit' to quit: ")
-        if user_input ==  'quit': # handle quitting
-            sesh_active = False 
-        else: # provide a response if the user does not quit
-            response = ask_question(knowledge_base, model, user_input)
-            sources = response["sources"]
-            answer = response["answer"]
-            for source in range(len(sources)): print(f"""Source #{source + 1}: {sources[source]}\n""")
-            print("Answer: ", answer)
-            
+    try: 
+        data_dir = os.path.join(os.path.dirname(__file__), "..", "data")
+
+        knowledge_base = build_knowledge_base(data_dir)
+        model = get_llm() 
+
+        # Set up parsers for command line arguments
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--query", type = str)
+        args = parser.parse_args()
+
+        if args.query: # Handle CLI argument for single-question mode
+            display_output(knowledge_base, model, args.query)
+
+        else: # Handle regular interactive mode
+            sesh_active = True 
+            while sesh_active: # handle the user input -> response loop
+                user_input = input("> Please type your question. Type 'quit' to quit: ")
+                if user_input ==  'quit': # handle quitting
+                    sesh_active = False 
+                else: # provide a response if the user does not quit
+                    display_output(knowledge_base, model, user_input)
+
+    except FileNotFoundError: # handle data directory issues
+        print("File not found.")
 
     # TODO: implement this (~10-12 lines)
 
