@@ -17,8 +17,7 @@ import argparse
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from langchain_community.vectorstores import FAISS
 from collections.abc import Callable
-# from src.knowledge_base import build_knowledge_base
-from knowledge_base import build_knowledge_base
+from src.knowledge_base import build_knowledge_base
 
 # ──────────────────────────────────────────────
 # Provided: local LLM (no API key needed)
