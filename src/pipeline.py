@@ -14,8 +14,8 @@ Useful docs:
 
 import os
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-from src.knowledge_base import build_knowledge_base
-
+# from src.knowledge_base import build_knowledge_base
+from knowledge_base import build_knowledge_base
 
 # ──────────────────────────────────────────────
 # Provided: local LLM (no API key needed)
@@ -80,8 +80,32 @@ def ask_question(vector_store, llm, question: str) -> dict:
             "answer"  -> str: the generated answer
             "sources" -> list[str]: the chunk texts that were retrieved
     """
+
+    relevant_chunks = vector_store.similarity_search(question, k=3) # a list of Document objects, which are chunked
+
+    # Build the context using relevant chunks
+    chunk_context = ""
+    sources = []
+
+    for chunk in relevant_chunks:
+        chunk_context += chunk.page_content
+        sources.append(chunk.page_content)
+
+    # Build the prompt template
+    prompt = PROMPT_TEMPLATE.format(context=chunk_context, question=question)
+
+    # Feed to llm and extract result 
+    answer = llm(prompt)
+
+    # Initialize response dictionary
+    q_response = {
+        "answer": answer[0]["generated_text"], 
+        "sources": sources
+    }
+
+    return q_response
     # TODO: implement this (~6-8 lines)
-    raise NotImplementedError("TODO 1: Implement ask_question")
+    # raise NotImplementedError("TODO 1: Implement ask_question")
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -102,8 +126,25 @@ def main():
     """
     data_dir = os.path.join(os.path.dirname(__file__), "..", "data")
 
+    knowledge_base = build_knowledge_base(data_dir)
+    model = get_llm() 
+
+    sesh_active = True 
+    while sesh_active: 
+        user_input = input("> Please type your question. Type 'quit' to quit: ")
+        if user_input ==  'quit': 
+            sesh_active = False 
+        else: 
+            response = ask_question(knowledge_base, model, user_input)
+            sources = response["sources"]
+            answer = response["answer"]
+            for source in range(len(sources)): 
+                print(f"""Source #{source}: {sources[source]}\n""")
+            print("Answer: ", answer)
+            
+
     # TODO: implement this (~10-12 lines)
-    raise NotImplementedError("TODO 2: Complete the interactive loop")
+    # raise NotImplementedError("TODO 2: Complete the interactive loop")
 
 
 if __name__ == "__main__":
