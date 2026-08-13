@@ -79,32 +79,25 @@ def ask_question(vector_store, llm, question: str) -> dict:
             "answer"  -> str: the generated answer
             "sources" -> list[str]: the chunk texts that were retrieved
     """
+    relevant_chunks = vector_store.similarity_search(question, k=3) # List of most relevant chunks 
 
-    relevant_chunks = vector_store.similarity_search(question, k=3) # a list of Document objects, which are chunked
+    context = "" 
+    sources = [] # List of sources for LLM answer (strings)
 
-    # Build the context using relevant chunks
-    chunk_context = ""
-    sources = []
-
-    for chunk in relevant_chunks:
-        chunk_context += chunk.page_content
+    for chunk in relevant_chunks: # Build the context using chunks
+        context += chunk.page_content
         sources.append(chunk.page_content)
 
-    # Build the prompt template
-    prompt = PROMPT_TEMPLATE.format(context=chunk_context, question=question)
-
-    # Feed to llm and extract result 
+    prompt = PROMPT_TEMPLATE.format(context=context, question=question)
     answer = llm(prompt)
-
-    # Initialize response dictionary
-    q_response = {
+    response = {
         "answer": answer[0]["generated_text"], 
         "sources": sources
     }
 
-    return q_response
+    return response
+
     # TODO: implement this (~6-8 lines)
-    # raise NotImplementedError("TODO 1: Implement ask_question")
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -129,21 +122,19 @@ def main():
     model = get_llm() 
 
     sesh_active = True 
-    while sesh_active: 
+    while sesh_active: # handle the user input -> response loop
         user_input = input("> Please type your question. Type 'quit' to quit: ")
-        if user_input ==  'quit': 
+        if user_input ==  'quit': # handle quitting
             sesh_active = False 
-        else: 
+        else: # provide a response if the user does not quit
             response = ask_question(knowledge_base, model, user_input)
             sources = response["sources"]
             answer = response["answer"]
-            for source in range(len(sources)): 
-                print(f"""Source #{source}: {sources[source]}\n""")
+            for source in range(len(sources)): print(f"""Source #{source + 1}: {sources[source]}\n""")
             print("Answer: ", answer)
             
 
     # TODO: implement this (~10-12 lines)
-    # raise NotImplementedError("TODO 2: Complete the interactive loop")
 
 
 if __name__ == "__main__":
