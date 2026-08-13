@@ -14,8 +14,7 @@ Useful docs:
 
 import os
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-# from src.knowledge_base import build_knowledge_base
-from knowledge_base import build_knowledge_base
+from src.knowledge_base import build_knowledge_base
 
 # ──────────────────────────────────────────────
 # Provided: local LLM (no API key needed)
